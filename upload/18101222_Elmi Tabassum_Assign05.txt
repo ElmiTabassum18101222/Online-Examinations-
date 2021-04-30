@@ -1,0 +1,171 @@
+import pandas as pd
+import numpy as np
+import sklearn as skl
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+import pandas as pd
+from google.colab import files
+uploaded = files.upload()
+
+for fn in uploaded.keys():
+  print('User uploaded file "{name}" with length {length} bytes'.format(
+      name=fn, length=len(uploaded[fn])))
+import io
+mushroomelmi_df = pd.read_csv(io.StringIO(uploaded['mushroom edibility classification dataset.csv'].decode('utf-8')))
+mushroomelmi_df.head()
+
+#preprossing removing null value
+mushroomelmi_df= mushroomelmi_df.dropna(axis=0, subset=["cap-shape","cap-color"])
+
+#Endcoding
+from sklearn.preprocessing import LabelEncoder
+enc = LabelEncoder()
+mushroomelmi_df['class'] = enc.fit_transform(mushroomelmi_df['class'])
+mushroomelmi_df['bruises'] = enc.fit_transform(mushroomelmi_df['bruises'])
+mushroomelmi_df.head()
+
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+terget = mushroomelmi_df["class"].values
+dataset = mushroomelmi_df.drop(["class"], axis=1).values
+
+#Split the data into 80% training and 20% testing
+x_train, x_test, y_train, y_test = train_test_split(dataset, terget,
+test_size=0.2, random_state=42)
+x_train.shape
+#Support Vector Machine
+from sklearn.svm import SVC
+svc = SVC(kernel="linear")
+svc.fit(x_train, y_train)
+predictionsSVC = svc.predict(x_test)
+print("Accuracy using Support Vector Machine :
+{}%".format(round(accuracy_score(y_test, predictionsSVC)*100,2)) )prePCAsvm=accuracy_score(y_test, predictionsSVC)*100
+#Random Forest
+from sklearn.ensemble import RandomForestClassifier
+rfc = RandomForestClassifier(n_estimators=50)
+rfc.fit(x_train, y_train)
+predictionsRFC = rfc.predict(x_test)
+print("Accuracy using Random Forest:
+{}%".format(round(accuracy_score(y_test, predictionsRFC)*100,2)) )
+prePCArfc=accuracy_score(y_test, predictionsRFC)*100
+#Neural Network
+from sklearn.neural_network import MLPClassifier
+nnc=MLPClassifier(hidden_layer_sizes=(7), activation="relu",
+max_iter=10000)
+nnc.fit(x_train, y_train)
+predictionsNNC = nnc.predict(x_test)
+print("Accuracy using Neural Network :
+{}%".format(round(accuracy_score(y_test, predictionsNNC)*100,2)) )
+prePCAnnc=accuracy_score(y_test, predictionsNNC)*100
+from sklearn.preprocessing import StandardScaler
+scaler= StandardScaler()
+mushroomelmi_df= pd.DataFrame(scaler.fit_transform(dataset))
+mushroomelmi_df=mushroomelmi_df.assign(target=terget)
+mushroomelmi_df.head()
+#Dimensionality reduction
+from sklearn.decomposition import PCA
+pca=PCA(n_components=9)
+principal_compt=pca.fit_transform(scaler.fit_transform(dataset))
+print(principal_compt.shape)
+dataset.shape
+principal_df = pd.DataFrame(data=principal_compt, columns=["principle
+component 1", "principle component 2","principle component 3","principle
+component 4","principle component 5","principle component 6","principle
+component 7","principle component 8","principle component 9"])
+main_df=pd.concat([principal_df, df[["target"]]], axis=1)main_df.head()
+X= main_df.drop("target" , axis=1)
+y= main_df["target"]
+x_train, x_test, y_train, y_test = train_test_split(X , y , test_size=0.2,
+random_state=42)
+x_train.shape
+from sklearn.svm import SVC
+svc_2 = SVC(kernel="linear")
+svc_2.fit(x_train, y_train)
+predictionsSVCpca = svc_2.predict(x_test)
+print("Accuracy using Support Vector Machine After PCA :
+{}%".format(round(accuracy_score(y_test, predictionsSVCpca)*100,2)) )
+postPCAsvm=accuracy_score(y_test, predictionsSVCpca)*100
+#Random Forest
+from sklearn.ensemble import RandomForestClassifier
+rfc_2 = RandomForestClassifier(n_estimators=50)
+rfc_2.fit(x_train, y_train)
+predictionsRFCpca = rfc_2.predict(x_test)
+print("Accuracy using Random Forest After PCA:
+{}%".format(round(accuracy_score(y_test, predictionsRFCpca)*100,2)) )
+postPCArfc=accuracy_score(y_test, predictionsRFCpca)*100
+#Neural Network
+from sklearn.neural_network import MLPClassifier
+nnc_2=MLPClassifier(hidden_layer_sizes=(7), activation="relu",
+max_iter=10000)
+nnc_2.fit(x_train, y_train)
+predictionsNNCpca = nnc_2.predict(x_test)
+print("Accuracy using Neural Network After PCA :
+{}%".format(round(accuracy_score(y_test, predictionsNNCpca)*100,2)) )
+postPCAnnc=accuracy_score(y_test, predictionsNNCpca)*100
+#Comparing the accuracy and plot them as a bar chartimport matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+# labels = ['G1', 'G2', 'G3', 'G4', 'G5']
+v1 = predictionsSVC
+v2 = predictionsSVCpca
+# x = np.arange(len(labels)) # the label locations
+LenOFv1 = np.sum(predictionsSVC)
+LenOFv2 = np.sum(predictionsSVCpca)
+width = 0.35 # the width of the bars
+fig, ax = plt.subplots()
+rects1 = ax.bar(LenOFv1 - width/2, predictionsSVC, width, label='SVM
+pre-PCA')
+rects2 = ax.bar(LenOFv2 + width/2, predictionsSVCpca, width, label='SVM
+post-PCA')
+# Add some text for labels, title and custom x-axis tick labels, etc.
+ax.set_ylabel('Scores')
+ax.set_title('Scores by accuracy')
+ax.legend()
+def autolabel(rects):
+"""Attach a text label above each bar in *rects*, displaying its
+height."""
+for rect in rects:
+height = rect.get_height()
+ax.annotate('{}'.format(height),
+xy=(rect.get_x() + rect.get_width() / 2, height),
+xytext=(0, 3), # 3 points vertical offset
+textcoords="offset points",
+ha='center', va='bottom')
+autolabel(rects1)
+autolabel(rects2)fig.tight_layout()
+plt.show()
+#Comparing the accuracy and plot them as a bar chart
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+# x = np.arange(len(labels)) # the label locations
+LenOFv5 = np.sum(predictionsNNC)
+LenOFv6 = np.sum(predictionsNNCpca)
+width = 0.45 # the width of the bars
+fig, ax = plt.subplots()
+rects1 = ax.bar(LenOFv5 - width/2, predictionsNNC, width, label='NNC
+pre-PCA')
+rects2 = ax.bar(LenOFv6 + width/2, predictionsNNCpca, width, label='NNC
+post-PCA')
+# Add some text for labels, title and custom x-axis tick labels, etc.
+ax.set_ylabel('Scores')
+ax.set_title('Scores by accuracy')
+ax.legend()
+def autolabel(rects):
+"""Attach a text label above each bar in *rects*, displaying its
+height."""
+for rect in rects:
+height = rect.get_height()
+ax.annotate('{}'.format(height),
+xy=(rect.get_x() + rect.get_width() / 2, height),
+xytext=(0, 3), # 3 points vertical offset
+textcoords="offset points",
+ha='center', va='bottom')autolabel(rects1)
+autolabel(rects2)
+fig.tight_layout()
+plt.show()
